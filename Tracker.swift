@@ -14,6 +14,7 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @Published var counter = 1.0
     @Published var magneticHeading = 0.0
+    @Published var trueNorth = 0.0
     @Published var latitude = "no latitude"
     private let locationManager : CLLocationManager
     public var myMotor : Motor?
@@ -37,6 +38,7 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
         magneticHeading = newHeading.magneticHeading
+        trueNorth = newHeading.trueHeading
     }
     
     

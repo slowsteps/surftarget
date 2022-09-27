@@ -11,15 +11,10 @@ struct ContentView: View {
             
             
             Group {
-                Text("Magnetic Heading").padding()
-                Text(tracker.magneticHeading.debugDescription)
-                Text("Latitude").padding()
-                Text(tracker.latitude)
+                Text("True north").padding()
+                Text(tracker.trueNorth.debugDescription).padding()
                 Button("ask for location permission") {
                     tracker.requestPermission()
-                }
-                Button("get location") {
-                    tracker.getLocation()
                 }
             }
             
@@ -33,7 +28,9 @@ struct ContentView: View {
                     motor.startBluetooth()
                 }
     
-        
+                Text("Turndegrees").padding()
+                Text(motor.turnDegrees.description).padding()
+                
                 Button("Send msg to nano") {
                     motor.sendStringtoNano()
                 }.padding()

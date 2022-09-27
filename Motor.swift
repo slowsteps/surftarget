@@ -9,6 +9,8 @@ import Foundation
 import CoreBluetooth
 import CoreGraphics
 
+
+
 class Motor : NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     
     @Published var bleDevices = "none"
@@ -17,15 +19,15 @@ class Motor : NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheral
     var characteristicTurnMotor : CBCharacteristic!
     var characteristicDegree : CBCharacteristic!
     public var myTracker : Tracker = Tracker()
-    var camPoint = CGPoint(x:0.0,y:1.0)
-    var surfPoint = CGPoint(x:0.1,y:1)
+    
+    var targetPoint = CGPoint(x:0.1,y:1)
     var centerPoint = CGPoint(x:0.0,y:0.0)
-    var turnDegree : CGFloat = 0
+    @Published var turnDegrees : CGFloat = 0
     
     override init() {
         super.init()
         startBluetooth()
-        
+        print(getBearing())
     }
     
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
@@ -66,7 +68,8 @@ class Motor : NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheral
     }
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        print("connected to: \(peripheral.debugDescription)" )
+        let unknowdevicename = "unknown"
+        print("connected to: \(peripheral.name ?? unknowdevicename)")
         peripheral.discoverServices(nil)
         peripheral.delegate = self
     }
@@ -81,58 +84,64 @@ class Motor : NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheral
         }
     }
     
+    
+    
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         if let charac = service.characteristics {
             for characteristic in charac {
-                print("found characteristics")
+                //print("found characteristics")
                 
-                print(characteristic.debugDescription)
+                //print(characteristic.debugDescription)
                 if (characteristic.uuid.debugDescription.contains("1A57")) { characteristicDegree = characteristic }
                 if (characteristic.uuid.debugDescription.contains("2A57")) { characteristicTurnMotor = characteristic }
                 
                 
-                var myInt = 20
-                let data = Data(bytes: &myInt,count: MemoryLayout.size(ofValue: myInt))
-                
-                peripheral.writeValue(data, for: characteristicTurnMotor, type: .withResponse)
+//                var myInt = 20
+//                let data = Data(bytes: &myInt,count: MemoryLayout.size(ofValue: myInt))
+//
+//                peripheral.writeValue(data, for: characteristicTurnMotor, type: .withResponse)
 
                 }
             }
     }
-    //untested below and  todo need to check if should turn lef or right - below or over 180 degrees
-    
-    var str = "0"
     
     
     func sendStringtoNano() {
-        print("trying to send teststring to nano: ")
-        str = "45"
-        //house
-        centerPoint.x = 52.3143842466015
-        centerPoint.y = 5.046078517198089
-        //north
-        camPoint.x = 52.31474577145129
-        camPoint.y = 5.04604871383498
-        //church
-        surfPoint.x = 52.31227426147402
-        surfPoint.y = 5.046760629721911
-
-//
-        let magneticAngle = myTracker.magneticHeading
-        print("magneticAngle \(myTracker)")
-        surfPoint.x = centerPoint.x + cos(magneticAngle*Double.pi/180)
-        surfPoint.y = centerPoint.y + sin(magneticAngle*Double.pi/180)
-
-
-//        surfPoint.x = centerPoint.x + cos(90*Double.pi/180)
-//        surfPoint.y = centerPoint.y + sin(90*Double.pi/180)
-
+        print("trying to send teststring to nano: trueNorth: ")
+        print(myTracker.trueNorth)
+        turnDegrees =  getBearing() - myTracker.trueNorth
         
-        turnDegree = angleBetweenThreePoints(center: centerPoint, firstPoint: camPoint, secondPoint: surfPoint)*180/Double.pi
-        print("turndegree \(turnDegree)")
         if(nano != nil) {
-            nano.writeValue((str.data(using: String.Encoding.utf8)!), for: characteristicDegree, type: .withResponse)
+            nano.writeValue((turnDegrees.description.data(using: String.Encoding.utf8)!), for: characteristicDegree, type: .withResponse)
         }
+    }
+    
+    
+    func getBearing() -> CGFloat {
+        
+        let pointA = CGPoint(x:52.31439996,y:5.046095156) //home
+        //let pointB = CGPoint(x:52.33655965,y:5.067187006) //westbatterij
+        //let pointB = CGPoint(x:52.3347469,y:5.022097883) //maxis
+        let pointB = CGPoint(x:52.31218777103457,y:5.044288849771811) //station
+        
+        
+        
+        let lat1 = pointA.x.inRadians()
+        let lat2 = pointB.x.inRadians()
+
+        let diffLong = (pointB.y - pointA.y).inRadians()
+        
+        let x = sin(diffLong) * cos(lat2)
+        let y = cos(lat1) * sin(lat2) - (sin(lat1) * cos(lat2) * cos(diffLong))
+
+        var initial_bearing = atan2(x, y)
+
+        initial_bearing = initial_bearing.inDegrees()
+        
+        let compass_bearing = (initial_bearing + 360).truncatingRemainder(dividingBy: 360)
+        
+
+        return(compass_bearing)
     }
     
     func startBluetooth() {
@@ -141,22 +150,25 @@ class Motor : NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheral
     
     }
     
+    
+    
     func startScanning() {
         print("trying to start scanning")
         centralManager.scanForPeripherals(withServices: nil,options: nil)
     }
  
-    func angleBetweenThreePoints(center: CGPoint, firstPoint: CGPoint, secondPoint: CGPoint) -> CGFloat {
-            let firstAngle = atan2(firstPoint.y - center.y, firstPoint.x - center.x)
-            let secondAnlge = atan2(secondPoint.y - center.y, secondPoint.x - center.x)
-            let angleDiff = firstAngle - secondAnlge
-            
-//            if angleDiff < 0 {
-//                angleDiff *= -1
-//            }
-            
-            return angleDiff
-        }
     
     
+}
+
+extension BinaryFloatingPoint {
+    func inRadians() -> Self {
+        return self * .pi / 180
+    }
+}
+
+extension BinaryFloatingPoint {
+    func inDegrees() -> Self {
+        return self * 180 / .pi
+    }
 }
