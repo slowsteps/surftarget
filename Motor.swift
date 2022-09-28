@@ -19,15 +19,15 @@ class Motor : NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheral
     var characteristicTurnMotor : CBCharacteristic!
     var characteristicDegree : CBCharacteristic!
     public var myTracker : Tracker = Tracker()
-    
-    var targetPoint = CGPoint(x:0.1,y:1)
-    var centerPoint = CGPoint(x:0.0,y:0.0)
+    var targetlocations : [CGPoint] = []
+    @Published var locationNames = ["station","westbatterij","maxis","aartje de vos"]
+    @Published var curlocation = 0
     @Published var turnDegrees : CGFloat = 0
     
     override init() {
         super.init()
+        setupTargetLocations()
         startBluetooth()
-        print(getBearing())
     }
     
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
@@ -89,18 +89,8 @@ class Motor : NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheral
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         if let charac = service.characteristics {
             for characteristic in charac {
-                //print("found characteristics")
-                
-                //print(characteristic.debugDescription)
                 if (characteristic.uuid.debugDescription.contains("1A57")) { characteristicDegree = characteristic }
                 if (characteristic.uuid.debugDescription.contains("2A57")) { characteristicTurnMotor = characteristic }
-                
-                
-//                var myInt = 20
-//                let data = Data(bytes: &myInt,count: MemoryLayout.size(ofValue: myInt))
-//
-//                peripheral.writeValue(data, for: characteristicTurnMotor, type: .withResponse)
-
                 }
             }
     }
@@ -108,21 +98,38 @@ class Motor : NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheral
     
     func sendStringtoNano() {
         print("trying to send teststring to nano: trueNorth: ")
-        print(myTracker.trueNorth)
-        turnDegrees =  getBearing() - myTracker.trueNorth
+        //loop through list of testlocations on every click
+        turnDegrees =  getBearing(targetlocations[curlocation]) - myTracker.trueNorth
+        if (curlocation == targetlocations.count - 1) {
+            curlocation = 0
+        }
+        else {
+            curlocation = curlocation + 1
+        }
+        print(curlocation)
         
         if(nano != nil) {
             nano.writeValue((turnDegrees.description.data(using: String.Encoding.utf8)!), for: characteristicDegree, type: .withResponse)
         }
     }
     
+    func setupTargetLocations() {
+        targetlocations.append(CGPoint(x:52.31218777103457,y:5.044288849771811)) //station
+        targetlocations.append(CGPoint(x:52.33655965,y:5.067187006)) //westbatterij
+        targetlocations.append(CGPoint(x:52.33519890317027,y:5.022494705810035)) //maxi
+        targetlocations.append(CGPoint(x:52.315075090648946,y:5.046573824530786)) //aartje de vos
+    }
     
-    func getBearing() -> CGFloat {
+    func getBearing(_ pointB : CGPoint) -> CGFloat {
         
-        let pointA = CGPoint(x:52.31439996,y:5.046095156) //home
+        
+        
+        let pointA = CGPoint(x:myTracker.latitude,y:myTracker.longitude) //home
+        print("home gps")
         //let pointB = CGPoint(x:52.33655965,y:5.067187006) //westbatterij
-        //let pointB = CGPoint(x:52.3347469,y:5.022097883) //maxis
-        let pointB = CGPoint(x:52.31218777103457,y:5.044288849771811) //station
+        //let pointB = CGPoint(x:52.33519890317027,y:5.022494705810035) //maxis
+        //let pointB = CGPoint(x:52.315075090648946,y:5.046573824530786) //aartje de vos
+        //let pointB = CGPoint(x:52.31218777103457,y:5.044288849771811) //station
         
         
         

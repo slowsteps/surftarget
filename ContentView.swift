@@ -36,7 +36,7 @@ struct ContentView: View {
                 }.padding()
         
                 
-                TextField("Enter your name", text: $msgfornano).multilineTextAlignment(.center)
+                Text(motor.locationNames[motor.curlocation]).padding()
                 
                 
                 
