@@ -21,7 +21,7 @@ struct MyApp: App {
         myMotor = Motor()
         myTracker.myMotor = myMotor
         myMotor.myTracker = myTracker
-        print(myMotor.myTracker)
+        
     }
     
 

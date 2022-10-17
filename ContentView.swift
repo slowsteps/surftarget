@@ -35,6 +35,14 @@ struct ContentView: View {
                     motor.sendStringtoNano()
                 }.padding()
         
+                Button("Send location to server") {
+                    tracker.sendLocationToServerJSON()
+                }.padding()
+
+                Button("Get location from server") {
+                    tracker.getLocationFromServer()
+                }.padding()
+
                 
                 Text(motor.locationNames[motor.curlocation]).padding()
                 

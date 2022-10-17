@@ -3,7 +3,7 @@
 //  tuto
 //
 //  Created by Peter Squla on 03/09/2022.
-//
+// connects to Nano via bluetooth
 
 import Foundation
 import CoreBluetooth
