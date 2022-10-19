@@ -7,11 +7,12 @@ struct ContentView: View {
     @State private var msgfornano: String = "1"
     
     var body: some View {
+        
         VStack {
             
             
             Group {
-                Text("True north").padding()
+                Text("True north")
                 Text(tracker.trueNorth.debugDescription).padding()
                 Button("ask for location permission") {
                     tracker.requestPermission()
@@ -20,16 +21,16 @@ struct ContentView: View {
             
             Group {
             
-                Text("Bluetooth devices").padding()
+                Text("Bluetooth devices")
                 
-                Text(motor.bleDevices).padding()
+                Text(motor.bleDevices)
 
                 Button("ask for bluetooth permission") {
                     motor.startBluetooth()
                 }
     
                 Text("Turndegrees").padding()
-                Text(motor.turnDegrees.description).padding()
+                Text(motor.turnDegrees.description)
                 
                 Button("Send msg to nano") {
                     motor.sendStringtoNano()
@@ -43,17 +44,14 @@ struct ContentView: View {
                     tracker.getLocationFromServer()
                 }.padding()
 
+                Text(tracker.serverResult).padding().fixedSize(horizontal: false, vertical: true).font(.system(size: 16)).textSelection(.enabled)
                 
                 Text(motor.locationNames[motor.curlocation]).padding()
                 
-                
-                
             }
-
-            
-            
-        }
-        
+   
+         }
+    
     }
     
     func textFieldDidBeginEditing(textField: UITextField) {

@@ -20,6 +20,7 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var longitude = 0.0
     @Published var speed = 0.0
     @Published var course = 0.0
+    @Published var serverResult = "no server result"
     private let locationManager : CLLocationManager
     public var myMotor : Motor?
     
@@ -66,7 +67,8 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func sendLocationToServerJSON() {
         
-        let parameters: [String: Any] = ["longitude": longitude, "latitude": latitude,"speed":speed,"course":course]
+        let timesend = NSDate().timeIntervalSince1970
+        let parameters: [String: Any] = ["longitude": longitude, "latitude": latitude,"speed":speed,"course":course,"timesend":timesend]
         let url = URL(string: "https://surftracker-365018.ew.r.appspot.com/setlocation")! // change server url accordingly
 
         let session = URLSession.shared
@@ -82,7 +84,7 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
             return
           }
 
-          let task = session.dataTask(with: request) { data, response, error in
+        let task = session.dataTask(with: request) { data, response, error in
             
             if let error = error {
               print("Post Request Error: \(error.localizedDescription)")
@@ -129,7 +131,12 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
 
         let task = URLSession.shared.dataTask(with: url) {(data, response, error) in
             guard let data = data else { return }
-            print(String(data: data, encoding: .utf8)!)
+            let result = (String(data: data, encoding: .utf8)!)
+            DispatchQueue.main.async {
+                self.serverResult = result
+            }
+            
+
         }
 
         task.resume()
