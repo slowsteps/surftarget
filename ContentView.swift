@@ -1,50 +1,69 @@
 import SwiftUI
 import CoreLocation
+import MapKit
 
 struct ContentView: View {
     @StateObject var tracker = Tracker()
     @StateObject var motor = Motor ()
     @State private var msgfornano: String = "1"
+    @State private var isSurfer = false
+    @State private var isCamera = false
+    
     
     var body: some View {
         
-        VStack {
+        VStack{
             
             
             Group {
-                Text("True north")
-                Text(tracker.trueNorth.debugDescription).padding()
+                HStack {
+                    Text("True north:")
+                    Text(tracker.trueNorth.debugDescription)
+                }
                 Button("ask for location permission") {
                     tracker.requestPermission()
                 }
             }
             
             Group {
-            
-                Text("Bluetooth devices")
                 
-                Text(motor.bleDevices)
+                HStack {
+                    Text("Bluetooth device:")
+                    Text(motor.bleDevices)
+                }
 
                 Button("ask for bluetooth permission") {
                     motor.startBluetooth()
                 }
-    
-                Text("Turndegrees").padding()
-                Text(motor.turnDegrees.description)
+                HStack {
+                    Text("Turndegrees:")
+                    Text(motor.turnDegrees.description)
+                }
+            }
+            Group {
                 
                 Button("Send msg to nano") {
                     motor.sendStringtoNano()
                 }.padding()
         
-                Button("Send location to server") {
-                    tracker.sendLocationToServerJSON()
-                }.padding()
+                Toggle("share location",isOn: $isSurfer).padding().onChange(of: isSurfer) { newValue in
+                    tracker.toggleLocationSending(newValue)
+                }
+                
+                if isSurfer {
+                    ProgressView()
+                }
 
-                Button("Get location from server") {
-                    tracker.getLocationFromServer()
-                }.padding()
-
-                Text(tracker.serverResult).padding().fixedSize(horizontal: false, vertical: true).font(.system(size: 16)).textSelection(.enabled)
+                Toggle("get location",isOn: $isCamera).padding().onChange(of: isCamera) { newValue in
+                    tracker.toggleLocationGetting(newValue)
+                }
+                
+                
+                Map(coordinateRegion:$tracker.region).frame(width:400,height:200)
+              
+                if isCamera {
+                    Text(tracker.serverResult).padding().fixedSize(horizontal: false, vertical: true).font(.system(size: 16)).textSelection(.enabled)
+                }
                 
                 Text(motor.locationNames[motor.curlocation]).padding()
                 

@@ -8,6 +8,8 @@
 import Foundation
 import CoreLocation
 import SwiftUI
+import MapKit
+
 
 
 class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
@@ -23,18 +25,20 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var serverResult = "no server result"
     private let locationManager : CLLocationManager
     public var myMotor : Motor?
+    private var shareLocationTimer : Timer
+    private var getLocationTimer : Timer
+    @Published var region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 51.507222, longitude: -0.1275), span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5))
     
     override init() {
         
-        
         locationManager = CLLocationManager()
-        
+        shareLocationTimer = Timer()
+        getLocationTimer = Timer()
         super.init()
         locationManager.delegate = self
-        
+
     }
     
-
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         latitude = locations.first?.coordinate.latitude ?? 0
@@ -64,12 +68,29 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
     
+    func toggleLocationSending( _ isSurfer : Bool) {
+        if (isSurfer) {
+            shareLocationTimer  = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(sendLocationToServerJSON),userInfo: nil, repeats: true)
+        }
+        else {
+            shareLocationTimer.invalidate()
+        }
+    }
     
-    func sendLocationToServerJSON() {
+    func toggleLocationGetting( _ isCamera : Bool) {
+        if (isCamera) {
+            getLocationTimer  = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(getLocationFromServer),userInfo: nil, repeats: true)
+        }
+        else {
+            shareLocationTimer.invalidate()
+        }
+    }
+    
+    @objc func sendLocationToServerJSON() {
         
         let timesend = NSDate().timeIntervalSince1970
         let parameters: [String: Any] = ["longitude": longitude, "latitude": latitude,"speed":speed,"course":course,"timesend":timesend]
-        let url = URL(string: "https://surftracker-365018.ew.r.appspot.com/setlocation")! // change server url accordingly
+        let url = URL(string: "https://surftracker-365018.ew.r.appspot.com/setlocation")! 
 
         let session = URLSession.shared
         var request = URLRequest(url: url)
@@ -92,31 +113,31 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
             }
             
             // ensure there is valid response code returned from this HTTP response
-            guard let httpResponse = response as? HTTPURLResponse,
-                  (200...299).contains(httpResponse.statusCode)
-            else {
-              print("Invalid Response received from the server")
-              return
-            }
+//            guard let httpResponse = response as? HTTPURLResponse,
+//                  (200...299).contains(httpResponse.statusCode)
+//            else {
+//              print("Invalid Response received from the server")
+//              return
+//            }
             
             // ensure there is data returned
-            guard let responseData = data else {
-              print("nil Data received from the server")
-              return
-            }
-            
-            do {
-              // create json object from data or use JSONDecoder to convert to Model stuct
-              if let jsonResponse = try JSONSerialization.jsonObject(with: responseData, options: .mutableContainers) as? [String: Any] {
-                print(jsonResponse)
-                // handle json response
-              } else {
-                print("data maybe corrupted or in wrong format")
-                throw URLError(.badServerResponse)
-              }
-            } catch let error {
-              print(error.localizedDescription)
-            }
+//            guard let responseData = data else {
+//              print("nil Data received from the server")
+//              return
+//            }
+//
+//            do {
+//              // create json object from data or use JSONDecoder to convert to Model stuct
+//              if let jsonResponse = try JSONSerialization.jsonObject(with: responseData, options: .mutableContainers) as? [String: Any] {
+//                print(jsonResponse)
+//                // handle json response
+//              } else {
+//                print("data maybe corrupted or in wrong format")
+//                throw URLError(.badServerResponse)
+//              }
+//            } catch let error {
+//              print(error.localizedDescription)
+//            }
           }
           // perform the task
           task.resume()
@@ -125,15 +146,37 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
         
     }
     
-    func getLocationFromServer() {
-        print("getloc")
+    @objc func getLocationFromServer() {
         let url = URL(string: "https://surftracker-365018.ew.r.appspot.com/getlocation")!
 
         let task = URLSession.shared.dataTask(with: url) {(data, response, error) in
+
+            do {
+                let json = try JSONSerialization.jsonObject(with: data!, options: [])
+                if let obj = json as? [String: Any] {
+                    print(obj["longitude"]!)
+                    let long = obj["longitude"] as! CLLocationDegrees
+                    let lat = obj["latitude"] as! CLLocationDegrees
+                    self.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: lat, longitude: long), span: MKCoordinateSpan(latitudeDelta: 0.002, longitudeDelta: 0.002))
+                    
+                }
+            }
+            catch {
+                print(error.localizedDescription)
+            }
+
+
             guard let data = data else { return }
             let result = (String(data: data, encoding: .utf8)!)
+            
+
+            
+            //queue needs to be done otherwise vieuw does not pickup the binding serverresult
             DispatchQueue.main.async {
                 self.serverResult = result
+
+
+                
             }
             
 
@@ -141,6 +184,20 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
 
         task.resume()
     }
+    
+    func convertStringToDictionary(text: String) -> [String:AnyObject]? {
+        if let data = text.data(using: .utf8) {
+            do {
+                let json = try JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String:AnyObject]
+                return json
+            } catch {
+                print("Something went wrong")
+            }
+        }
+        return nil
+    }
+    
+    
     
     
 }
