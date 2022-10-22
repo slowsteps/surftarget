@@ -148,16 +148,20 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @objc func getLocationFromServer() {
         let url = URL(string: "https://surftracker-365018.ew.r.appspot.com/getlocation")!
-
+        var long = CLLocationDegrees()
+        var lat = CLLocationDegrees()
         let task = URLSession.shared.dataTask(with: url) {(data, response, error) in
 
+            if let error = error {
+              print("Request Error: \(error.localizedDescription)")
+              return
+            }
+            
             do {
                 let json = try JSONSerialization.jsonObject(with: data!, options: [])
                 if let obj = json as? [String: Any] {
-                    print(obj["longitude"]!)
-                    let long = obj["longitude"] as! CLLocationDegrees
-                    let lat = obj["latitude"] as! CLLocationDegrees
-                    self.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: lat, longitude: long), span: MKCoordinateSpan(latitudeDelta: 0.002, longitudeDelta: 0.002))
+                    long = obj["longitude"] as! CLLocationDegrees
+                    lat = obj["latitude"] as! CLLocationDegrees
                     
                 }
             }
@@ -174,9 +178,7 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
             //queue needs to be done otherwise vieuw does not pickup the binding serverresult
             DispatchQueue.main.async {
                 self.serverResult = result
-
-
-                
+                self.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: lat, longitude: long), span: MKCoordinateSpan(latitudeDelta: 0.002, longitudeDelta: 0.002))
             }
             
 
@@ -185,17 +187,7 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
         task.resume()
     }
     
-    func convertStringToDictionary(text: String) -> [String:AnyObject]? {
-        if let data = text.data(using: .utf8) {
-            do {
-                let json = try JSONSerialization.jsonObject(with: data, options: .mutableContainers) as? [String:AnyObject]
-                return json
-            } catch {
-                print("Something went wrong")
-            }
-        }
-        return nil
-    }
+ 
     
     
     
