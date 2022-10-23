@@ -34,7 +34,8 @@ let package = Package(
             ],
             capabilities: [
                 .locationWhenInUse(purposeString: "Surftracker needs to know where it is and where it's heading"),
-                .bluetoothAlways(purposeString: "Surftracker needs bluetooth to connect to the motor")
+                .bluetoothAlways(purposeString: "Surftracker needs bluetooth to connect to the motor"),
+                .locationAlwaysAndWhenInUse(purposeString: "Surftracker needs to track when app is in background")
             ]
         )
     ],

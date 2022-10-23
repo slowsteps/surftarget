@@ -17,6 +17,7 @@ struct MyApp: App {
     
     init() {
         
+        
         myTracker = Tracker()
         myMotor = Motor()
         myTracker.myMotor = myMotor

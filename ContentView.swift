@@ -39,6 +39,7 @@ struct ContentView: View {
                     Text("Turndegrees:")
                     Text(motor.turnDegrees.description)
                 }
+                Link("API", destination: URL(string: "https://surftracker-365018.ew.r.appspot.com/")!)
             }
             Group {
                 
@@ -48,15 +49,16 @@ struct ContentView: View {
         
                 Toggle("share location",isOn: $isSurfer).padding().onChange(of: isSurfer) { newValue in
                     tracker.toggleLocationSending(newValue)
-                }
+                }.onAppear { UIApplication.shared.isIdleTimerDisabled = true }
                 
-                if isSurfer {
-                    ProgressView()
-                }
+//                if isSurfer {
+//                    ProgressView()
+//                }
 
                 Toggle("get location",isOn: $isCamera).padding().onChange(of: isCamera) { newValue in
                     tracker.toggleLocationGetting(newValue)
-                }
+                }.onAppear { UIApplication.shared.isIdleTimerDisabled = true }
+                    
                 
                 
                 Map(coordinateRegion:$tracker.region).frame(width:400,height:200)

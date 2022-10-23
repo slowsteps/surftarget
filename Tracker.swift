@@ -28,10 +28,15 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
     private var shareLocationTimer : Timer
     private var getLocationTimer : Timer
     @Published var region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 51.507222, longitude: -0.1275), span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5))
+    private var simplecounter = 0
     
     override init() {
         
         locationManager = CLLocationManager()
+        locationManager.pausesLocationUpdatesAutomatically = false
+        // TODO needs plist
+        //locationManager.allowsBackgroundLocationUpdates = true
+        locationManager.activityType = CLActivityType.fitness
         shareLocationTimer = Timer()
         getLocationTimer = Timer()
         super.init()
@@ -82,7 +87,7 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
             getLocationTimer  = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(getLocationFromServer),userInfo: nil, repeats: true)
         }
         else {
-            shareLocationTimer.invalidate()
+            getLocationTimer.invalidate()
         }
     }
     
@@ -147,9 +152,13 @@ class Tracker : NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     @objc func getLocationFromServer() {
+        print(simplecounter)
+        simplecounter = simplecounter + 1
+        
         let url = URL(string: "https://surftracker-365018.ew.r.appspot.com/getlocation")!
         var long = CLLocationDegrees()
         var lat = CLLocationDegrees()
+        
         let task = URLSession.shared.dataTask(with: url) {(data, response, error) in
 
             if let error = error {
